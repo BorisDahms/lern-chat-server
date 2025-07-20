@@ -27,7 +27,6 @@ module.exports = async (req, res) => {
         // Prüfen, ob der API-Schlüssel in Vercel hinterlegt wurde.
         if (!GEMINI_API_KEY) {
             console.error("Fehler: GEMINI_API_KEY ist nicht in den Vercel Environment Variables gesetzt.");
-            // Sende eine klare Fehlermeldung, die im Frontend angezeigt werden kann.
             return res.status(500).json({ error: "API-Schlüssel ist auf dem Server nicht konfiguriert." });
         }
 
@@ -41,12 +40,13 @@ module.exports = async (req, res) => {
 
         // --- 2. Anfrage an die Google API senden ---
 
-        // Die URL für die Google API.
         const googleApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
-        // Die Daten, die an Google gesendet werden.
+        // KORRIGIERT: Die Daten, die an Google gesendet werden.
+        // 'systemInstruction' ist jetzt eine eigene Eigenschaft und nicht mehr Teil von 'contents'.
         const requestPayload = {
-            contents: [systemInstruction, ...history],
+            contents: history,
+            systemInstruction: systemInstruction,
             generationConfig: {
                 temperature: 0.7,
                 maxOutputTokens: 1000,
