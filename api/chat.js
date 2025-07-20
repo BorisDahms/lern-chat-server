@@ -1,4 +1,4 @@
-// Dies ist die Hauptfunktion, die Vercel bei jeder Anfrage an /api/chat ausführt.
+/// Dies ist die Hauptfunktion, die Vercel bei jeder Anfrage an /api/chat ausführt.
 module.exports = async (req, res) => {
     // --- CORS-Header setzen ---
     res.setHeader('Access-Control-Allow-Credentials', true);
@@ -34,10 +34,15 @@ module.exports = async (req, res) => {
         // --- 2. Anfrage an die Google API senden ---
         const googleApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
-        // FINALE KORREKTUR: Wir kombinieren die Anweisung für die KI und den Chatverlauf
-        // in einem einzigen "contents"-Array. Dies ist die stabilste Methode.
+        // FINALE KORREKTUR: Die Google API erwartet die Systemanweisung als separates Objekt
+        // und dieses Objekt darf keine "role"-Eigenschaft enthalten. Wir bereinigen die Daten.
+        const cleanSystemInstruction = {
+            parts: systemInstruction.parts
+        };
+
         const requestPayload = {
-            contents: [systemInstruction, ...history],
+            contents: history, // Nur der Chatverlauf
+            systemInstruction: cleanSystemInstruction, // Die bereinigte Anweisung für die KI
             generationConfig: {
                 temperature: 0.7,
                 maxOutputTokens: 1000,
@@ -72,4 +77,5 @@ module.exports = async (req, res) => {
         return res.status(500).json({ error: error.message });
     }
 };
+
 
