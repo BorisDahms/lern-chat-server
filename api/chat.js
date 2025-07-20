@@ -1,4 +1,4 @@
-/// Dies ist die Hauptfunktion, die Vercel bei jeder Anfrage an /api/chat ausführt.
+// Dies ist die Hauptfunktion, die Vercel bei jeder Anfrage an /api/chat ausführt.
 module.exports = async (req, res) => {
     // --- CORS-Header setzen ---
     res.setHeader('Access-Control-Allow-Credentials', true);
@@ -25,24 +25,27 @@ module.exports = async (req, res) => {
             return res.status(500).json({ error: "API-Schlüssel ist auf dem Server nicht konfiguriert." });
         }
 
-        const { history, systemInstruction } = req.body;
+        // Wir nehmen nur den Chat-Verlauf vom Frontend.
+        const { history } = req.body;
 
-        if (!history || !systemInstruction) {
-            return res.status(400).json({ error: "Fehlerhafte Anfrage: 'history' oder 'systemInstruction' fehlt." });
+        if (!history) {
+            return res.status(400).json({ error: "Fehlerhafte Anfrage: 'history' fehlt." });
         }
 
         // --- 2. Anfrage an die Google API senden ---
         const googleApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
-        // FINALE KORREKTUR: Die Google API erwartet die Systemanweisung als separates Objekt
-        // und dieses Objekt darf keine "role"-Eigenschaft enthalten. Wir bereinigen die Daten.
-        const cleanSystemInstruction = {
-            parts: systemInstruction.parts
+        // FINALE KORREKTUR: Wir erstellen die Anweisung für die KI direkt hier auf dem Server,
+        // um jegliche Formatierungsfehler vom Frontend auszuschließen.
+        const serverSystemInstruction = {
+            parts: [{
+                text: "Du bist eine immer hilfsbereite 'Lernprozessbegleitung'. Deine Aufgabe ist es, komplexe Themen einfach und verständlich zusammenzufassen. Du begleitest das Lernen der dir anvertrauten Menschen und ebnest ihnen den Weg. Deine Antworten sind klar, ermutigend und auf den Punkt gebracht. Verwende einfache Sprache und gelegentlich Analogien, um das Verständnis zu erleichtern."
+            }]
         };
 
         const requestPayload = {
-            contents: history, // Nur der Chatverlauf
-            systemInstruction: cleanSystemInstruction, // Die bereinigte Anweisung für die KI
+            contents: history,
+            systemInstruction: serverSystemInstruction, // Wir verwenden die neue, saubere Anweisung.
             generationConfig: {
                 temperature: 0.7,
                 maxOutputTokens: 1000,
@@ -56,23 +59,17 @@ module.exports = async (req, res) => {
         });
 
         // --- 3. Antwort verarbeiten ---
-
-        // Wenn die Google API einen Fehler meldet...
         if (!googleResponse.ok) {
-            // ...lesen wir die Antwort als Text, da sie bei einem Fehler kein JSON sein muss.
             const errorText = await googleResponse.text();
             console.error(`Google API Fehler: ${googleResponse.status}`, errorText);
-            // Wir werfen einen neuen Fehler, der dann im catch-Block behandelt wird.
             throw new Error(`Fehler von Google API: ${errorText}`);
         }
 
         const data = await googleResponse.json();
         
-        // Die erfolgreiche Antwort von Google wird an das Frontend zurückgesendet.
         return res.status(200).json(data);
 
     } catch (error) {
-        // Dieser Block fängt jetzt alle Fehler sicher ab.
         console.error("Ein interner Fehler ist im /api/chat Endpunkt aufgetreten:", error.message);
         return res.status(500).json({ error: error.message });
     }
