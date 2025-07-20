@@ -1,83 +1,215 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KI-Chatbot</title>
-  <style>
-    body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f0f0f0; }
-    #chat-container { width: 400px; height: 600px; border: 1px solid #ccc; border-radius: 10px; background-color: white; display: flex; flex-direction: column; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-    #chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
-    .message { max-width: 80%; padding: 10px 15px; border-radius: 18px; line-height: 1.4; }
-    .user-message { background-color: #007bff; color: white; align-self: flex-end; }
-    .bot-message { background-color: #e9e9eb; color: black; align-self: flex-start; }
-    .typing-indicator { color: #999; font-style: italic; align-self: flex-start; }
-    #chat-form { display: flex; border-top: 1px solid #ccc; padding: 10px; }
-    #chat-input { flex: 1; border: 1px solid #ccc; border-radius: 18px; padding: 10px; font-size: 1em; }
-    #send-btn { background: #007bff; color: white; border: none; border-radius: 50%; width: 40px; height: 40px; margin-left: 10px; cursor: pointer; font-size: 1.5em; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deine Lernprozessbegleitung</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f7f9;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        #chat-container {
+            width: 90%;
+            max-width: 600px;
+            height: 80vh;
+            max-height: 700px;
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #chat-window {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .message {
+            max-width: 80%;
+            padding: 12px 18px;
+            border-radius: 18px;
+            margin-bottom: 12px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+        .user-message {
+            background-color: #007aff;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+        .bot-message {
+            background-color: #e5e5ea;
+            color: black;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+        .typing-indicator {
+            color: #888;
+            font-style: italic;
+            align-self: flex-start;
+        }
+        #input-area {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+        #user-input {
+            flex-grow: 1;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            padding: 10px 15px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        #user-input:focus {
+            border-color: #007aff;
+        }
+        #send-button {
+            background-color: #007aff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            font-size: 1.5rem;
+            margin-left: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        #send-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </head>
 <body>
-  <div id="chat-container">
-    <div id="chat-messages">
-      <div class="bot-message">Hallo! Wie kann ich dir heute helfen?</div>
+
+<div id="chat-container">
+    <div id="chat-window">
+        <div class="message bot-message">
+            Hallo! Ich bin deine persönliche Lernprozessbegleitung. Frag mich alles, was du wissen möchtest, und ich versuche, es dir ganz einfach zu erklären. Womit starten wir?
+        </div>
     </div>
-    <form id="chat-form">
-      <input type="text" id="chat-input" placeholder="Stelle eine Frage..." autocomplete="off" required>
-      <button id="send-btn" type="submit">›</button>
-    </form>
-  </div>
+    <div id="input-area">
+        <input type="text" id="user-input" placeholder="Stell mir eine Frage...">
+        <button id="send-button">→</button>
+    </div>
+</div>
 
-  <script>
-    const chatForm = document.getElementById('chat-form');
-    const chatInput = document.getElementById('chat-input');
-    const chatMessages = document.getElementById('chat-messages');
+<script>
+    // Die URL zeigt jetzt auf unseren eigenen Server-Endpunkt. Kein API-Schlüssel mehr im Frontend!
+    const API_URL = '/api/chat';
 
-    // Wenn das Formular abgeschickt wird
-    chatForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const userInput = chatInput.value.trim();
-      if (!userInput) return;
+    // Persona für die KI
+    const systemInstruction = {
+        role: "system",
+        parts: [{
+            text: "Du bist eine immer hilfsbereite 'Lernprozessbegleitung'. Deine Aufgabe ist es, komplexe Themen einfach und verständlich zusammenzufassen. Du begleitest das Lernen der dir anvertrauten Menschen und ebnest ihnen den Weg. Deine Antworten sind klar, ermutigend und auf den Punkt gebracht. Verwende einfache Sprache und gelegentlich Analogien, um das Verständnis zu erleichtern."
+        }]
+    };
 
-      // Nutzernachricht anzeigen und Eingabefeld leeren
-      addMessage(userInput, 'user-message');
-      chatInput.value = '';
-      
-      const typingIndicator = addMessage('...', 'typing-indicator');
+    let conversationHistory = [];
 
-      try {
-        // Anfrage an unser eigenes Backend senden
-        const response = await fetch('http://localhost:3000/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: userInput })
-        });
+    const chatWindow = document.getElementById('chat-window');
+    const userInput = document.getElementById('user-input');
+    const sendButton = document.getElementById('send-button');
 
-        if (!response.ok) throw new Error('Netzwerk-Antwort war nicht ok.');
-
-        const data = await response.json();
-        
-        // "schreibt..."-Indikator entfernen und Antwort des Bots anzeigen
-        typingIndicator.remove();
-        addMessage(data.reply, 'bot-message');
-
-      } catch (error) {
-        typingIndicator.remove();
-        addMessage('Entschuldigung, es gab einen Fehler. Bitte versuche es erneut.', 'bot-message');
-        console.error('Fehler:', error);
-      }
+    // Event-Listener für den Senden-Knopf und die Enter-Taste
+    sendButton.addEventListener('click', sendMessage);
+    userInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            sendMessage();
+        }
     });
 
-    // Hilfsfunktion, um Nachrichten im Chatfenster hinzuzufügen
-    function addMessage(text, className) {
-      const messageDiv = document.createElement('div');
-      messageDiv.className = `message ${className}`;
-      messageDiv.textContent = text;
-      chatMessages.appendChild(messageDiv);
-      // Automatisch nach unten scrollen
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-      return messageDiv;
+    // Funktion zum Anzeigen von Nachrichten im Chatfenster
+    function displayMessage(text, sender) {
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message', `${sender}-message`);
+        messageDiv.innerText = text;
+        chatWindow.appendChild(messageDiv);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
     }
-  </script>
+
+    // Funktion zum Anzeigen des "schreibt..." Indikators
+    function showTypingIndicator() {
+        let indicator = document.getElementById('typing-indicator');
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'typing-indicator';
+            indicator.classList.add('message', 'bot-message', 'typing-indicator');
+            indicator.innerText = 'schreibt...';
+            chatWindow.appendChild(indicator);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+    }
+
+    // Funktion zum Entfernen des "schreibt..." Indikators
+    function hideTypingIndicator() {
+        const indicator = document.getElementById('typing-indicator');
+        if (indicator) {
+            indicator.remove();
+        }
+    }
+
+    // Hauptfunktion zum Senden der Nachricht an den API
+    async function sendMessage() {
+        const userMessage = userInput.value.trim();
+        if (!userMessage) return;
+
+        displayMessage(userMessage, 'user');
+        userInput.value = '';
+        showTypingIndicator();
+
+        // Fügt die neue Nutzernachricht zur Historie hinzu
+        conversationHistory.push({ role: "user", parts: [{ text: userMessage }] });
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                // KORRIGIERT: Wir senden die Historie und die Systemanweisung an unseren Server.
+                body: JSON.stringify({
+                    history: conversationHistory,
+                    systemInstruction: systemInstruction
+                })
+            });
+
+            if (!response.ok) {
+                // Versuchen, eine detailliertere Fehlermeldung vom Server zu bekommen
+                const errorData = await response.json();
+                throw new Error(`API-Fehler: ${errorData.error || response.statusText}`);
+            }
+
+            const data = await response.json();
+            hideTypingIndicator();
+
+            // Antwort extrahieren und anzeigen
+            const botResponse = data.candidates[0].content.parts[0].text;
+            displayMessage(botResponse, 'bot');
+
+            // Fügt die Antwort der KI zur Historie hinzu
+            conversationHistory.push({ role: "model", parts: [{ text: botResponse }] });
+
+        } catch (error) {
+            hideTypingIndicator();
+            displayMessage(`Entschuldigung, da ist etwas schiefgelaufen: ${error.message}`, 'bot');
+            console.error(error);
+        }
+    }
+</script>
+
 </body>
 </html>
