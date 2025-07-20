@@ -1,5 +1,3 @@
-// Wir importieren node-fetch nicht mehr, da es in der Vercel-Umgebung bereits vorhanden ist.
-
 // Dies ist die Hauptfunktion, die Vercel bei jeder Anfrage an /api/chat ausführt.
 module.exports = async (req, res) => {
     // --- CORS-Header setzen ---
