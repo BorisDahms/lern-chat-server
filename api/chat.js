@@ -1,5 +1,6 @@
 // Dies ist die Hauptfunktion, die Vercel bei jeder Anfrage an /api/chat ausführt.
-module.exports = async (req, res) => {
+// KORRIGIERT: Wir verwenden jetzt "export default", um die Funktion für ES-Module bereitzustellen.
+export default async function handler(req, res) {
     // --- CORS-Header setzen ---
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
