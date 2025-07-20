@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KI-Chatbot</title>
+  <style>
+    body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f0f0f0; }
+    #chat-container { width: 400px; height: 600px; border: 1px solid #ccc; border-radius: 10px; background-color: white; display: flex; flex-direction: column; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    #chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+    .message { max-width: 80%; padding: 10px 15px; border-radius: 18px; line-height: 1.4; }
+    .user-message { background-color: #007bff; color: white; align-self: flex-end; }
+    .bot-message { background-color: #e9e9eb; color: black; align-self: flex-start; }
+    .typing-indicator { color: #999; font-style: italic; align-self: flex-start; }
+    #chat-form { display: flex; border-top: 1px solid #ccc; padding: 10px; }
+    #chat-input { flex: 1; border: 1px solid #ccc; border-radius: 18px; padding: 10px; font-size: 1em; }
+    #send-btn { background: #007bff; color: white; border: none; border-radius: 50%; width: 40px; height: 40px; margin-left: 10px; cursor: pointer; font-size: 1.5em; }
+  </style>
+</head>
+<body>
+  <div id="chat-container">
+    <div id="chat-messages">
+      <div class="bot-message">Hallo! Wie kann ich dir heute helfen?</div>
+    </div>
+    <form id="chat-form">
+      <input type="text" id="chat-input" placeholder="Stelle eine Frage..." autocomplete="off" required>
+      <button id="send-btn" type="submit">›</button>
+    </form>
+  </div>
+
+  <script>
+    const chatForm = document.getElementById('chat-form');
+    const chatInput = document.getElementById('chat-input');
+    const chatMessages = document.getElementById('chat-messages');
+
+    // Wenn das Formular abgeschickt wird
+    chatForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const userInput = chatInput.value.trim();
+      if (!userInput) return;
+
+      // Nutzernachricht anzeigen und Eingabefeld leeren
+      addMessage(userInput, 'user-message');
+      chatInput.value = '';
+      
+      const typingIndicator = addMessage('...', 'typing-indicator');
+
+      try {
+        // Anfrage an unser eigenes Backend senden
+        const response = await fetch('http://localhost:3000/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: userInput })
+        });
+
+        if (!response.ok) throw new Error('Netzwerk-Antwort war nicht ok.');
+
+        const data = await response.json();
+        
+        // "schreibt..."-Indikator entfernen und Antwort des Bots anzeigen
+        typingIndicator.remove();
+        addMessage(data.reply, 'bot-message');
+
+      } catch (error) {
+        typingIndicator.remove();
+        addMessage('Entschuldigung, es gab einen Fehler. Bitte versuche es erneut.', 'bot-message');
+        console.error('Fehler:', error);
+      }
+    });
+
+    // Hilfsfunktion, um Nachrichten im Chatfenster hinzuzufügen
+    function addMessage(text, className) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${className}`;
+      messageDiv.textContent = text;
+      chatMessages.appendChild(messageDiv);
+      // Automatisch nach unten scrollen
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      return messageDiv;
+    }
+  </script>
+</body>
+</html>
