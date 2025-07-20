@@ -34,11 +34,10 @@ module.exports = async (req, res) => {
         // --- 2. Anfrage an die Google API senden ---
         const googleApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
-        // KORRIGIERT: Die 'systemInstruction' muss eine eigene Eigenschaft sein,
-        // nicht Teil des 'contents'-Arrays.
+        // FINALE KORREKTUR: Wir kombinieren die Anweisung für die KI und den Chatverlauf
+        // in einem einzigen "contents"-Array. Dies ist die stabilste Methode.
         const requestPayload = {
-            contents: history, // Nur der Chatverlauf kommt hier rein
-            systemInstruction: systemInstruction, // Die Anweisungen für die KI stehen separat
+            contents: [systemInstruction, ...history],
             generationConfig: {
                 temperature: 0.7,
                 maxOutputTokens: 1000,
@@ -73,3 +72,4 @@ module.exports = async (req, res) => {
         return res.status(500).json({ error: error.message });
     }
 };
+
