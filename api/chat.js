@@ -1,6 +1,4 @@
-// Wir importieren node-fetch, um Anfragen an die Google API zu senden.
-// Wir importieren node-fetch, um Anfragen an die Google API zu senden.
-const fetch = require('node-fetch');
+// Wir importieren node-fetch nicht mehr, da es in der Vercel-Umgebung bereits vorhanden ist.
 
 // Dies ist die Hauptfunktion, die Vercel bei jeder Anfrage an /api/chat ausführt.
 module.exports = async (req, res) => {
