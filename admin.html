@@ -11,40 +11,61 @@
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 20px; background-color: #f7f7f7; }
         .container { max-width: 800px; margin: 0 auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         h1, h2 { color: #333; }
-        select, input[type="text"], input[type="url"] { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        select, input[type="text"], input[type="url"], textarea { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
         button { padding: 10px 15px; border: none; border-radius: 5px; background-color: #007bff; color: white; cursor: pointer; transition: background-color 0.3s; }
         button:hover { background-color: #0056b3; }
+        button.save-btn { background-color: #28a745; }
+        button.save-btn:hover { background-color: #218838; }
         .card-list { margin-top: 20px; }
         .card-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; border: 1px solid #eee; border-radius: 5px; margin-bottom: 10px; }
-        .card-item-content { flex-grow: 1; }
-        .card-item-actions button { margin-left: 10px; background-color: #6c757d; font-size: 0.8rem; padding: 5px 10px;}
+        .card-item-content { flex-grow: 1; word-break: break-all; margin-right: 15px; }
+        .card-item-actions { display: flex; gap: 8px; flex-shrink: 0; }
+        .card-item-actions button { font-size: 0.8rem; padding: 5px 10px; min-width: 85px; text-align: center; }
+        .card-item-actions .edit-btn { background-color: #007bff; }
+        .card-item-actions .edit-btn:hover { background-color: #0056b3; }
         .card-item-actions .delete-btn { background-color: #dc3545; }
+        .card-item-actions .delete-btn:hover { background-color: #c82333; }
+        .edit-view-input { padding: 5px; margin-top: 5px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>Lernkarten-Verwaltung (Admin)</h1>
-
     <div id="topic-management">
         <h2>Thema auswählen</h2>
         <select id="topic-select" onchange="displayCardsForTopic()"></select>
     </div>
-
     <hr>
-
     <div id="card-management">
         <h2>Karten des Themas</h2>
         <div id="cards-container" class="card-list">
             <p>Bitte wählen Sie oben ein Thema aus.</p>
         </div>
     </div>
+    <hr>
+    <div id="add-card-form">
+        <h2>Neue Karte hinzufügen</h2>
+        <div>
+            <label for="new-question">Frage:</label>
+            <input type="text" id="new-question" placeholder="Geben Sie hier die Frage ein">
+        </div>
+        <div>
+            <label for="new-answer">Text-Antwort (optional):</label>
+            <textarea id="new-answer" rows="3" placeholder="Geben Sie hier die Antwort als Text ein"></textarea>
+        </div>
+        <div>
+            <label for="new-image-url">Bild-URL (optional):</label>
+            <input type="url" id="new-image-url" placeholder="https://beispiel.de/bild.jpg">
+        </div>
+        <button onclick="addNewCard()" class="save-btn">Neue Karte speichern</button>
+    </div>
 </div>
 
 <script>
-    // Dieselbe Firebase Konfiguration wie in der Lern-App
     const firebaseConfig = {
-        apiKey: "AIzaSyCiRssR2sKAyZh6dwoozrtRAHi-lCNDMtM",
+        apiKey: "IHR_API_SCHLUESSEL", // WICHTIG: Ersetzen Sie dies mit Ihrem eingeschränkten Schlüssel
         authDomain: "lernkarten-801e2.firebaseapp.com",
         databaseURL: "https://lernkarten-801e2-default-rtdb.europe-west1.firebasedatabase.app",
         projectId: "lernkarten-801e2",
@@ -56,71 +77,147 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    let allData = {}; // Speichert alle Themen und Karten
+    let allData = {};
     const topicSelect = document.getElementById('topic-select');
     const cardsContainer = document.getElementById('cards-container');
+    const newQuestionInput = document.getElementById('new-question');
+    const newAnswerInput = document.getElementById('new-answer'); // NEU
+    const newImageUrlInput = document.getElementById('new-image-url');
 
-    // 1. LÄDT ALLE DATEN AUS FIREBASE, WENN DIE SEITE STARTET
     function loadInitialData() {
-        database.ref('themen').once('value').then((snapshot) => {
+        database.ref('themen').on('value', (snapshot) => {
             allData = snapshot.val();
             populateTopicSelector();
-            displayCardsForTopic(); // Zeigt Karten für das erste Thema an
-        }).catch(error => {
-            console.error("Fehler beim Laden der Daten:", error);
-            alert("Daten konnten nicht geladen werden.");
+            displayCardsForTopic();
         });
     }
 
-    // 2. FÜLLT DAS DROPDOWN-MENÜ MIT ALLEN THEMEN
     function populateTopicSelector() {
-        topicSelect.innerHTML = ''; // Leert alte Einträge
+        const currentVal = topicSelect.value;
+        topicSelect.innerHTML = '';
         for (const topicKey in allData) {
             const option = document.createElement('option');
             option.value = topicKey;
             option.innerText = allData[topicKey].displayName;
             topicSelect.appendChild(option);
         }
+        if (currentVal) topicSelect.value = currentVal;
     }
 
-    // 3. ZEIGT DIE KARTEN FÜR DAS AUSGEWÄHLTE THEMA AN
     function displayCardsForTopic() {
         const selectedTopicKey = topicSelect.value;
         const topic = allData[selectedTopicKey];
-        cardsContainer.innerHTML = ''; // Leert die alte Kartenliste
+        cardsContainer.innerHTML = '';
 
         if (!topic || !topic.cards) {
             cardsContainer.innerHTML = '<p>Für dieses Thema wurden noch keine Karten angelegt.</p>';
             return;
         }
 
-        // Firebase speichert Arrays als Objekte, daher umwandeln
-        const cards = Array.isArray(topic.cards) ? topic.cards : Object.values(topic.cards);
-
-        cards.forEach((card, index) => {
-            if (!card) return; // Überspringt leere Einträge
+        for (const cardKey in topic.cards) {
+            const card = topic.cards[cardKey];
+            if (!card) continue; 
 
             const cardElement = document.createElement('div');
             cardElement.className = 'card-item';
+            cardElement.id = `card-${cardKey}`; 
             
-            // Inhalt der Karte (Frage und Bild-URL)
+            // ANZEIGE ANGEPASST, UM AUCH DIE TEXT-ANTWORT ZU ZEIGEN
             cardElement.innerHTML = `
                 <div class="card-item-content">
                     <strong>Frage:</strong> ${card.question}<br>
-                    <small><strong>Bild-URL:</strong> ${card.bildUrl || 'Keine URL angegeben'}</small>
+                    <small><strong>Antwort:</strong> ${card.answer || 'Kein Text'}</small><br>
+                    <small><strong>Bild-URL:</strong> ${card.bildUrl || 'Keine URL'}</small>
                 </div>
                 <div class="card-item-actions">
-                    <button class="edit-btn">Bearbeiten</button>
-                    <button class="delete-btn">Löschen</button>
+                    <button onclick="editCard('${cardKey}')" class="edit-btn">Bearbeiten</button>
+                    <button onclick="deleteCard('${cardKey}')" class="delete-btn">Löschen</button>
                 </div>
             `;
             cardsContainer.appendChild(cardElement);
-        });
+        }
+    }
+    
+    function addNewCard() {
+        const selectedTopicKey = topicSelect.value;
+        const newQuestion = newQuestionInput.value.trim();
+        const newAnswer = newAnswerInput.value.trim(); // NEU
+        const newImageUrl = newImageUrlInput.value.trim();
+
+        if (!newQuestion) {
+            alert('Bitte geben Sie eine Frage ein.');
+            return;
+        }
+        // NEUES KARTENOBJEKT MIT TEXT-ANTWORT
+        const newCard = { 
+            question: newQuestion, 
+            answer: newAnswer,
+            bildUrl: newImageUrl 
+        };
+
+        database.ref(`themen/${selectedTopicKey}/cards`).push(newCard)
+            .then(() => {
+                alert('Neue Karte erfolgreich gespeichert!');
+                newQuestionInput.value = '';
+                newAnswerInput.value = ''; // NEU
+                newImageUrlInput.value = '';
+            })
+            .catch(error => alert('Fehler beim Speichern: ' + error.message));
+    }
+    
+    function deleteCard(cardKey) {
+        if (!confirm('Möchten Sie diese Lernkarte wirklich endgültig löschen?')) return;
+        const selectedTopicKey = topicSelect.value;
+        database.ref(`themen/${selectedTopicKey}/cards/${cardKey}`).remove()
+            .then(() => alert('Karte erfolgreich gelöscht.'))
+            .catch(error => alert('Fehler beim Löschen: ' + error.message));
     }
 
-    // STARTPUNKT: Die App wird geladen, wenn die Seite bereit ist
-    document.addEventListener('DOMContentLoaded', loadInitialData);
+    function editCard(cardKey) {
+        const selectedTopicKey = topicSelect.value;
+        const card = allData[selectedTopicKey].cards[cardKey];
+        const cardElement = document.getElementById(`card-${cardKey}`);
 
+        // BEARBEITUNGSANSICHT MIT TEXT-ANTWORT-FELD
+        cardElement.innerHTML = `
+            <div class="card-item-content">
+                <input type="text" id="edit-question-${cardKey}" class="edit-view-input" value="${card.question}">
+                <textarea id="edit-answer-${cardKey}" class="edit-view-input" rows="2">${card.answer || ''}</textarea>
+                <input type="url" id="edit-image-${cardKey}" class="edit-view-input" value="${card.bildUrl || ''}">
+            </div>
+            <div class="card-item-actions">
+                <button onclick="saveCard('${cardKey}')" class="save-btn">Speichern</button>
+                <button onclick="displayCardsForTopic()">Abbrechen</button>
+            </div>
+        `;
+    }
+
+    function saveCard(cardKey) {
+        const selectedTopicKey = topicSelect.value;
+        
+        const updatedQuestion = document.getElementById(`edit-question-${cardKey}`).value.trim();
+        const updatedAnswer = document.getElementById(`edit-answer-${cardKey}`).value.trim(); // NEU
+        const updatedImageUrl = document.getElementById(`edit-image-${cardKey}`).value.trim();
+
+        if (!updatedQuestion) {
+            alert('Die Frage darf nicht leer sein.');
+            return;
+        }
+
+        // AKTUALISIERTES KARTENOBJEKT MIT TEXT-ANTWORT
+        const updatedCardData = {
+            question: updatedQuestion,
+            answer: updatedAnswer,
+            bildUrl: updatedImageUrl
+        };
+
+        const cardRef = database.ref(`themen/${selectedTopicKey}/cards/${cardKey}`);
+        cardRef.update(updatedCardData)
+            .then(() => alert('Änderungen erfolgreich gespeichert.'))
+            .catch(error => alert('Fehler beim Speichern: ' + error.message));
+    }
+
+    document.addEventListener('DOMContentLoaded', loadInitialData);
 </script>
 
 </body>
