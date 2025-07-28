@@ -24,10 +24,35 @@
         .button-row { display: flex; justify-content: center; width: 100%; gap: 10px; }
         button { padding: 12px 15px; font-size: 1rem; cursor: pointer; border: 1px solid #ccc; border-radius: 5px; background-color: #f8f8f8; transition: background-color 0.3s; flex-grow: 1; flex-basis: 0; }
         button:hover { background-color: #e7e7e7; }
+        
+        .btn-schwer, .btn-mittel, .btn-einfach {
+            border-width: 2px;
+        }
         .btn-schwer { border-color: #f44336; }
         .btn-mittel { border-color: #ffc107; }
         .btn-einfach { border-color: #4CAF50; }
-        .difficulty-note { font-size: 0.8rem; color: #666; text-align: center; margin-top: 5px; }
+        
+        .difficulty-note {
+            font-size: 0.9rem;
+            color: #c0392b;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .secondary-actions button {
+            font-size: 0.8rem;
+            padding: 8px 12px;
+            background-color: #e9ecef;
+            border-color: #ced4da;
+            color: #495057;
+            flex-grow: 0;
+            flex-basis: auto;
+        }
+         .secondary-actions button:hover {
+             background-color: #d6dbe0;
+        }
+
         .controls { margin: 15px 0; display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 10px; }
         .control-btn { font-size: 0.8rem; padding: 8px 12px; flex-grow: 1; }
         #toggle-hide-button { background-color: #e9ecef; border-color: #ced4da; color: #495057; }
@@ -37,10 +62,23 @@
         .progress-container { width: 100%; background-color: #e0e0e0; border-radius: 5px; margin-bottom: 20px; }
         .progress-bar { width: 0%; height: 15px; background-color: #4CAF50; border-radius: 5px; text-align: center; line-height: 15px; color: white; transition: width 0.4s ease-in-out; }
         #visitor-counter { text-align: center; margin-top: 40px; margin-bottom: 20px; font-size: 0.9rem; color: #555; }
-        .hidden { display: none; } /* NEUE CSS-Klasse zum Ausblenden */
+        .hidden { display: none; }
+        
+        /* NEU: Versteckt den Druckbereich in der normalen Ansicht */
+        #printable-content {
+            display: none;
+        }
+
         @media (min-width: 600px) { .flashcard-container { margin: 40px auto; } .card-front, .card-back { font-size: 1.5rem; } }
         @media (max-width: 360px) { .card-front, .card-back { font-size: 1.1rem; padding: 15px; } button { padding: 10px; } }
-        @media print { body * { display: none; } #printable-content, #printable-content * { display: block; } .printable-card { page-break-inside: avoid; border: 1px solid #ccc; border-radius: 8px; padding: 15px; margin-bottom: 20px; } .printable-card h3 { font-size: 14pt; margin: 0 0 10px 0; color: #000; } .printable-card div { font-size: 12pt; color: #333; } .printable-card img { max-width: 80%; height: auto; margin-top: 10px; border-radius: 5px; } }
+        @media print { 
+            body * { display: none; } 
+            #printable-content, #printable-content * { display: block; } 
+            .printable-card { page-break-inside: avoid; border: 1px solid #ccc; border-radius: 8px; padding: 15px; margin-bottom: 20px; } 
+            .printable-card h3 { font-size: 14pt; margin: 0 0 10px 0; color: #000; } 
+            .printable-card div { font-size: 12pt; color: #333; } 
+            .printable-card img { max-width: 80%; height: auto; margin-top: 10px; border-radius: 5px; } 
+        }
     </style>
 </head>
 <body>
@@ -91,7 +129,7 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
             <button onclick="flipCard()">Umdrehen</button>
             <button onclick="nextCard()">Nächste</button>
         </div>
-        <div class="button-row">
+        <div class="button-row secondary-actions">
             <button onclick="switchUser()">Benutzer wechseln</button>
             <button onclick="printCards()">Drucken</button>
         </div>
@@ -129,8 +167,8 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
     const topicSelect = document.getElementById('topic-select');
     const toggleHideButton = document.getElementById('toggle-hide-button');
     const controlsDiv = document.querySelector('.controls');
-    const difficultyButtons = document.getElementById('difficulty-buttons'); // NEU
-    const difficultyNote = document.getElementById('difficulty-note'); // NEU
+    const difficultyButtons = document.getElementById('difficulty-buttons'); 
+    const difficultyNote = document.getElementById('difficulty-note'); 
 
     function generateCardId(topic, question) {
         return `${topic}_${question.replace(/[^a-zA-Z0-9]/g, '')}`.slice(0, 50);
@@ -228,8 +266,8 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
 
     function showCard() {
         cardElement.classList.remove('flipped');
-        difficultyButtons.classList.add('hidden'); // Buttons beim Anzeigen einer neuen Karte ausblenden
-        difficultyNote.classList.add('hidden');    // Notiz beim Anzeigen einer neuen Karte ausblenden
+        difficultyButtons.classList.add('hidden');
+        difficultyNote.classList.add('hidden');
         
         if (shuffledCards.length === 0) {
             questionElement.innerText = "Alle Karten in diesem Thema gelernt oder es sind keine Karten vorhanden.";
@@ -261,7 +299,6 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
 
     function flipCard() {
         cardElement.classList.toggle('flipped');
-        // Bewertungs-Buttons ein-/ausblenden, wenn die Karte gedreht wird
         difficultyButtons.classList.toggle('hidden');
         difficultyNote.classList.toggle('hidden');
     }
@@ -372,7 +409,6 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
             case 'ArrowRight': nextCard(); break;
             case ' ': e.preventDefault(); flipCard(); break;
             case 'Enter': 
-                // Enter soll nur funktionieren, wenn die Buttons sichtbar sind
                 if (!difficultyButtons.classList.contains('hidden')) {
                     markDifficulty('einfach');
                 }
