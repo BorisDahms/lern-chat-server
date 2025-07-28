@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lernkarten-App nach Themen</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif; margin: 0; padding: 15px; box-sizing: border-box;
+        }
+        .flashcard-container {
+            display: flex; flex-direction: column; align-items: center; margin: 20px auto; width: 100%; max-width: 500px;
+        }
+        .topic-selector {
+            margin-bottom: 20px; text-align: center; width: 100%;
+        }
+        #topic-select {
+            padding: 10px; font-size: 1rem; border-radius: 5px; border: 1px solid #ccc; width: 90%; max-width: 350px;
+        }
+        label {
+            display: block; margin-bottom: 8px; font-size: 1.1rem;
+        }
+        .card {
+            width: 100%;
+            aspect-ratio: 1712 / 1325;
+            perspective: 1000px;
+            position: relative;
+            margin-bottom: 15px;
+        }
+        .card-inner {
+            width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 0.6s; box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2); border-radius: 10px;
+        }
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+        .card-front, .card-back {
+            position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; box-sizing: border-box; border-radius: 10px; font-size: 1.2rem;
+            overflow: hidden;
+        }
+        .card-front {
+            background-color: #d1e7ff;
+            color: #0e0b4f;
+        }
+        .card-back {
+            background-color: #d7ffd9;
+            color: #0e0b4f;
+            transform: rotateY(180deg);
+        }
+        .card-back img {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 5px;
+            object-fit: contain;
+        }
+        .card-buttons {
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            gap: 10px;
+        }
+        .button-row {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            gap: 10px;
+        }
+        button {
+            padding: 12px 15px;
+            font-size: 1rem;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f8f8f8;
+            transition: background-color 0.3s;
+            flex-grow: 1;
+            flex-basis: 0;
+        }
+        button:hover {
+            background-color: #e7e7e7;
+        }
+        .btn-schwer { border-color: #f44336; }
+        .btn-mittel { border-color: #ffc107; }
+        .btn-einfach { border-color: #4CAF50; }
+        .difficulty-note {
+            font-size: 0.8rem;
+            color: #666;
+            text-align: center;
+            margin-top: 5px;
+        }
+        .controls {
+            margin: 15px 0; display: flex; align-items: center; justify-content: space-between; width: 100%;
+        }
+        .controls label {
+            margin-right: 10px; font-size: 1rem; display: inline-block;
+        }
+        #reset-progress {
+            font-size: 0.8rem;
+            padding: 5px 10px;
+            background-color: #fce4e4;
+            border-color: #f44336;
+        }
+        .progress-text {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: #555;
+        }
+        .progress-container {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .progress-bar {
+            width: 0%;
+            height: 15px;
+            background-color: #4CAF50;
+            border-radius: 5px;
+            text-align: center;
+            line-height: 15px;
+            color: white;
+            transition: width 0.4s ease-in-out;
+        }
+        #visitor-counter {
+            text-align: center;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: #555;
+        }
+        @media (min-width: 600px) {
+            .flashcard-container { margin: 40px auto; }
+            .card-front, .card-back { font-size: 1.5rem; }
+        }
+        @media (max-width: 360px) {
+            .card-front, .card-back { font-size: 1.1rem; padding: 15px; }
+            button { padding: 10px; }
+        }
+        @media print {
+            body * { display: none; }
+            #printable-content, #printable-content * { display: block; }
+            .printable-card {
+                page-break-inside: avoid; border: 1px solid #ccc; border-radius: 8px;
+                padding: 15px; margin-bottom: 20px;
+            }
+            .printable-card h3 { font-size: 14pt; margin: 0 0 10px 0; color: #000; }
+            .printable-card div { font-size: 12pt; color: #333; }
+            .printable-card img { max-width: 80%; height: auto; margin-top: 10px; border-radius: 5px; }
+        }
+    </style>
+</head>
+<body>
+
+<center>
+<img src="https://bildungscampus-leipzig.de/userfiles/images/Lernkarten/logo%20Bildungscampus.jpg" width="160" height="120" alt="Logo Bildungscampus">
+<img src="https://bildungscampus-leipzig.de/userfiles/images/Lernkarten/Lernkartensmiley.jpg" height="130" alt="Lernkartensmiley">
+<br><br>
+<div style="color: #0e0b4f; font-size: 1.5rem; font-weight: bold;">Unsere Lernkarten</div><br>
+<div style="font-size: 1rem; color: #0e0b4f; margin-top: 10px;">
+Bitte wählen Sie ein Handlungsfeld aus.<br>
+Sie können bereits gelernte Inhalte ausblenden und sehen am<br>
+Fortschrittsbalken Ihren Lernfortschritt...<br>
+Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen ein..
+</div>
+</center>
+
+<div class="flashcard-container">
+    <div class="topic-selector">
+        <label for="topic-select">Thema auswählen:</label>
+        <select id="topic-select" onchange="changeTopic()"></select>
+    </div>
+
+    <div class="controls">
+        <div>
+            <input type="checkbox" id="hide-learned-checkbox" onchange="toggleLearnedCards()">
+            <label for="hide-learned-checkbox">"Einfache" Karten ausblenden</label>
+        </div>
+        <button id="reset-progress" onclick="resetTopicProgress()">Fortschritt zurücksetzen</button>
+    </div>
+
+    <p class="progress-text" id="progressText">Fortschritt: 0 / 0 (0%)</p>
+    <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <div class="card" id="flashcard">
+        <div class="card-inner">
+            <div class="card-front">
+                <p id="question"></p>
+            </div>
+            <div class="card-back">
+                <div id="answer"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-buttons">
+        <div class="button-row">
+            <button onclick="markDifficulty('schwer')" class="btn-schwer">Schwer</button>
+            <button onclick="markDifficulty('mittel')" class="btn-mittel">Mittel</button>
+            <button onclick="markDifficulty('einfach')" class="btn-einfach">Einfach</button>
+        </div>
+        <div class="difficulty-note">
+            Bitte bewerten Sie für sich selbst den Schwierigkeitsgrad dieser Frage.
+        </div>
+        <div class="button-row">
+            <button onclick="prevCard()">Zurück</button>
+            <button onclick="flipCard()">Umdrehen</button>
+            <button onclick="nextCard()">Nächste</button>
+        </div>
+        <div class="button-row">
+            <button onclick="switchUser()">Benutzer wechseln</button>
+            <button onclick="printCards()">Drucken</button>
+        </div>
+    </div>
+</div>
+
+<div id="visitor-counter">Lade Besucherzahl...</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyA7L9lyP2M78SjaSSHRB66FG-BIhXimAgs",
+        authDomain: "lernkarten-801e2.firebaseapp.com",
+        databaseURL: "https://lernkarten-801e2-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "lernkarten-801e2",
+        storageBucket: "lernkarten-801e2.appspot.com",
+        messagingSenderId: "170901842419",
+        appId: "1:170901842419:web:07c8196da0317da7824a86"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    // ==================================================================
+    // ENTFERNT: Das riesige flashcardData-Objekt war hier.
+    // NEU: flashcardData wird nun aus Firebase geladen.
+    // ==================================================================
+    let flashcardData = {};
+
+    let currentTopic;
+    let currentCardIndex = 0;
+    let shuffledCards = [];
+    let learnedCards = {};
+    let userId = 'defaultUser';
+    let isMixMode = false;
+
+    const questionElement = document.getElementById('question');
+    const answerElement = document.getElementById('answer');
+    const cardElement = document.getElementById('flashcard');
+    const topicSelect = document.getElementById('topic-select');
+    const hideLearnedCheckbox = document.getElementById('hide-learned-checkbox');
+    const controlsDiv = document.querySelector('.controls');
+
+    function generateCardId(topic, question) {
+        return `${topic}_${question.replace(/[^a-zA-Z0-9]/g, '')}`.slice(0, 50);
+    }
+
+    function loadLearnedStatus() {
+        if (isMixMode) {
+            learnedCards = {};
+            shuffleAndShow();
+            return;
+        }
+        const learnedRef = database.ref(`learnedStatus/${userId}/${currentTopic}`);
+        learnedRef.once('value', (snapshot) => {
+            learnedCards = snapshot.val() || {};
+            shuffleAndShow();
+        });
+    }
+
+    function populateTopics() {
+        topicSelect.innerHTML = ''; 
+        for (const topicKey in flashcardData) {
+            const option = document.createElement('option');
+            option.value = topicKey;
+            option.innerText = flashcardData[topicKey].displayName;
+            topicSelect.appendChild(option);
+        }
+        const mixOption = document.createElement('option');
+        mixOption.value = 'mix_all';
+        mixOption.innerText = 'Alle Themen mischen';
+        topicSelect.appendChild(mixOption);
+        
+        // Das erste Thema als Standard setzen
+        if (!currentTopic) {
+             currentTopic = Object.keys(flashcardData)[0];
+        }
+        topicSelect.value = currentTopic;
+    }
+
+    function shuffleAndShow() {
+        updateProgressBar();
+        let cards = [];
+        if (isMixMode) {
+            for (const topicKey in flashcardData) {
+                // Sicherstellen, dass das Thema Karten hat
+                if(flashcardData[topicKey].cards) {
+                    // Firebase speichert Arrays als Objekte, daher umwandeln
+                    const cardArray = Array.isArray(flashcardData[topicKey].cards) 
+                        ? flashcardData[topicKey].cards 
+                        : Object.values(flashcardData[topicKey].cards);
+
+                    cardArray.forEach(card => {
+                        card.id = generateCardId(topicKey, card.question);
+                        cards.push(card);
+                    });
+                }
+            }
+        } else {
+            if (!flashcardData[currentTopic] || !flashcardData[currentTopic].cards) {
+                shuffledCards = [];
+                showCard();
+                return;
+            };
+            // Firebase speichert Arrays oft als Objekte, wir stellen sicher, dass es immer ein Array ist
+             cards = Array.isArray(flashcardData[currentTopic].cards)
+                ? [...flashcardData[currentTopic].cards]
+                : [...Object.values(flashcardData[currentTopic].cards)];
+        }
+        if (hideLearnedCheckbox.checked && !isMixMode) {
+            cards = cards.filter(card => {
+                const cardId = generateCardId(currentTopic, card.question);
+                return learnedCards[cardId] !== 'einfach';
+            });
+        }
+        for (let i = cards.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [cards[i], cards[j]] = [cards[j], cards[i]];
+        }
+        shuffledCards = cards;
+        currentCardIndex = 0;
+        showCard();
+    }
+
+    function showCard() {
+        cardElement.classList.remove('flipped');
+        if (shuffledCards.length === 0) {
+            questionElement.innerText = "Alle Karten in diesem Thema gelernt oder es sind keine Karten vorhanden.";
+            answerElement.innerHTML = "-";
+            return;
+        }
+        const currentCard = shuffledCards[currentCardIndex];
+        questionElement.innerText = currentCard.question || "Frage nicht gefunden";
+        let backContent = `<span>${currentCard.answer || ""}</span>`;
+        if (currentCard.bildUrl) {
+            backContent += `<img src="${currentCard.bildUrl}" alt="Bild zur Lernkarte">`;
+        }
+        answerElement.innerHTML = backContent;
+    }
+
+    function changeTopic() {
+        currentTopic = topicSelect.value;
+        isMixMode = (currentTopic === 'mix_all');
+        controlsDiv.style.display = isMixMode ? 'none' : 'flex';
+        loadLearnedStatus();
+    }
+
+    function toggleLearnedCards() {
+        shuffleAndShow();
+    }
+
+    function flipCard() {
+        cardElement.classList.toggle('flipped');
+    }
+
+    function prevCard() {
+        if (shuffledCards.length === 0) return;
+        currentCardIndex = (currentCardIndex - 1 + shuffledCards.length) % shuffledCards.length;
+        showCard();
+    }
+
+    function nextCard() {
+        if (shuffledCards.length === 0) return;
+        currentCardIndex = (currentCardIndex + 1) % shuffledCards.length;
+        showCard();
+    }
+
+    function updateProgressBar() {
+        if (isMixMode) {
+            document.getElementById('progressText').innerText = "Zufallsmodus";
+            document.getElementById('progressBar').style.width = '0%';
+            return;
+        }
+        if (!flashcardData[currentTopic] || !flashcardData[currentTopic].cards) {
+            document.getElementById('progressText').innerText = "Keine Karten in diesem Thema";
+            document.getElementById('progressBar').style.width = '0%';
+            return;
+        }
+
+        const totalCards = Object.keys(flashcardData[currentTopic].cards).length;
+        const learnedCount = Object.keys(learnedCards).length;
+        const percentage = totalCards > 0 ? (learnedCount / totalCards) * 100 : 0;
+        const progressBarElement = document.getElementById('progressBar');
+        const progressTextElement = document.getElementById('progressText');
+        progressBarElement.style.width = percentage + '%';
+        progressTextElement.innerText = `Fortschritt: ${learnedCount} / ${totalCards} (${Math.round(percentage)}%)`;
+    }
+
+    function markDifficulty(level) {
+        if (shuffledCards.length === 0 || isMixMode) return;
+        const currentCard = shuffledCards[currentCardIndex];
+        const cardId = generateCardId(currentTopic, currentCard.question);
+        database.ref(`learnedStatus/${userId}/${currentTopic}/${cardId}`).set(level);
+        learnedCards[cardId] = level;
+        updateProgressBar();
+        if (hideLearnedCheckbox.checked && level === 'einfach') {
+            shuffleAndShow();
+        } else {
+            nextCard();
+        }
+    }
+
+    function resetTopicProgress() {
+        if (isMixMode) return;
+        if (confirm(`Möchten Sie den Lernfortschritt für "${flashcardData[currentTopic].displayName}" wirklich zurücksetzen?`)) {
+            database.ref(`learnedStatus/${userId}/${currentTopic}`).remove();
+            learnedCards = {};
+            shuffleAndShow();
+        }
+    }
+
+    function switchUser() {
+        let newUserId = prompt("Bitte gib einen neuen Benutzernamen ein:", "gast");
+        if (!newUserId || newUserId.trim() === "") return;
+        userId = newUserId.trim();
+        changeTopic();
+        alert(`Willkommen, ${userId}!`);
+    }
+
+    function updateVisitorCount() {
+        const visitorRef = database.ref('visitors');
+        visitorRef.transaction((currentCount) => (currentCount || 0) + 1)
+            .then(result => {
+                if (result.committed) {
+                    document.getElementById('visitor-counter').innerText = `Besucher: ${result.snapshot.val()}`;
+                }
+            }).catch(error => console.log('Firebase transaction failed!', error));
+    }
+
+    function printCards() {
+        let printableContent = document.getElementById('printable-content');
+        if (!printableContent) {
+            printableContent = document.createElement('div');
+            printableContent.id = 'printable-content';
+            document.body.appendChild(printableContent);
+        }
+        printableContent.innerHTML = '';
+        const cardsToPrint = isMixMode ? shuffledCards : Object.values(flashcardData[currentTopic].cards || {});
+        cardsToPrint.forEach(card => {
+            if (!card || card.question.startsWith("Halten Sie durch!")) return;
+            const cardElement = document.createElement('div');
+            cardElement.className = 'printable-card';
+            let content = `<h3>${card.question}</h3>`;
+            if (card.bildUrl) {
+                content += `<div><img src="${card.bildUrl}" alt="Antwortbild"></div>`;
+            } else if (card.answer) {
+                content += `<div>${card.answer}</div>`;
+            }
+            cardElement.innerHTML = content;
+            printableContent.appendChild(cardElement);
+        });
+        setTimeout(() => window.print(), 250);
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        switch (e.key) {
+            case 'ArrowLeft': prevCard(); break;
+            case 'ArrowRight': nextCard(); break;
+            case ' ': e.preventDefault(); flipCard(); break;
+            case 'Enter': markDifficulty('einfach'); break;
+        }
+    });
+    
+    // ==================================================================
+    // NEU: Haupt-Ladefunktion
+    // ==================================================================
+    function loadApp() {
+        userId = prompt("Bitte gib einen Benutzernamen ein (um deinen Fortschritt zu speichern):", "gast");
+        if (!userId) userId = 'gast';
+        
+        // 1. Lade alle Kartendaten aus der Datenbank
+        database.ref('themen').once('value').then((snapshot) => {
+            flashcardData = snapshot.val();
+            
+            // 2. Initialisiere die App, nachdem die Daten geladen sind
+            populateTopics();
+            loadLearnedStatus();
+            updateVisitorCount();
+        }).catch(error => {
+            console.error("Fehler beim Laden der Kartendaten:", error);
+            alert("Die Lernkarten konnten nicht aus der Datenbank geladen werden. Bitte überprüfen Sie die Verbindung.");
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', loadApp);
+</script>
+
+</body>
+</html>
