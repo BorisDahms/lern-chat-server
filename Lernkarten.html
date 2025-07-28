@@ -28,13 +28,16 @@
         .btn-mittel { border-color: #ffc107; }
         .btn-einfach { border-color: #4CAF50; }
         .difficulty-note { font-size: 0.8rem; color: #666; text-align: center; margin-top: 5px; }
-        .controls { margin: 15px 0; display: flex; align-items: center; justify-content: space-between; width: 100%; }
-        .controls label { margin-right: 10px; font-size: 1rem; display: inline-block; }
-        #reset-progress { font-size: 0.8rem; padding: 5px 10px; background-color: #fce4e4; border-color: #f44336; }
+        .controls { margin: 15px 0; display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 10px; }
+        .control-btn { font-size: 0.8rem; padding: 8px 12px; flex-grow: 1; }
+        #toggle-hide-button { background-color: #e9ecef; border-color: #ced4da; color: #495057; }
+        #toggle-hide-button.active { background-color: #007bff; border-color: #007bff; color: white; }
+        #reset-progress { background-color: #f8d7da; border-color: #f5c6cb; color: #721c24; }
         .progress-text { width: 100%; text-align: center; margin-bottom: 5px; font-size: 0.9rem; color: #555; }
         .progress-container { width: 100%; background-color: #e0e0e0; border-radius: 5px; margin-bottom: 20px; }
         .progress-bar { width: 0%; height: 15px; background-color: #4CAF50; border-radius: 5px; text-align: center; line-height: 15px; color: white; transition: width 0.4s ease-in-out; }
         #visitor-counter { text-align: center; margin-top: 40px; margin-bottom: 20px; font-size: 0.9rem; color: #555; }
+        .hidden { display: none; } /* NEUE CSS-Klasse zum Ausblenden */
         @media (min-width: 600px) { .flashcard-container { margin: 40px auto; } .card-front, .card-back { font-size: 1.5rem; } }
         @media (max-width: 360px) { .card-front, .card-back { font-size: 1.1rem; padding: 15px; } button { padding: 10px; } }
         @media print { body * { display: none; } #printable-content, #printable-content * { display: block; } .printable-card { page-break-inside: avoid; border: 1px solid #ccc; border-radius: 8px; padding: 15px; margin-bottom: 20px; } .printable-card h3 { font-size: 14pt; margin: 0 0 10px 0; color: #000; } .printable-card div { font-size: 12pt; color: #333; } .printable-card img { max-width: 80%; height: auto; margin-top: 10px; border-radius: 5px; } }
@@ -61,11 +64,8 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
         <select id="topic-select" onchange="changeTopic()"></select>
     </div>
     <div class="controls">
-        <div>
-            <input type="checkbox" id="hide-learned-checkbox" onchange="toggleLearnedCards()">
-            <label for="hide-learned-checkbox">"Einfache" Karten ausblenden</label>
-        </div>
-        <button id="reset-progress" onclick="resetTopicProgress()">Fortschritt zurücksetzen</button>
+        <button id="toggle-hide-button" class="control-btn" onclick="toggleHideState()">"Einfache" Karten ausblenden</button>
+        <button id="reset-progress" class="control-btn" onclick="resetTopicProgress()">Fortschritt zurücksetzen</button>
     </div>
     <p class="progress-text" id="progressText">Fortschritt: 0 / 0 (0%)</p>
     <div class="progress-container">
@@ -73,22 +73,18 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
     </div>
     <div class="card" id="flashcard">
         <div class="card-inner">
-            <div class="card-front">
-                <p id="question"></p>
-            </div>
-            <div class="card-back">
-                <div id="answer"></div>
-            </div>
+            <div class="card-front"><p id="question"></p></div>
+            <div class="card-back"><div id="answer"></div></div>
         </div>
     </div>
     <div class="card-buttons">
-        <div class="button-row">
+        <div id="difficulty-buttons" class="button-row hidden">
             <button onclick="markDifficulty('schwer')" class="btn-schwer">Schwer</button>
             <button onclick="markDifficulty('mittel')" class="btn-mittel">Mittel</button>
             <button onclick="markDifficulty('einfach')" class="btn-einfach">Einfach</button>
         </div>
-        <div class="difficulty-note">
-            Bitte bewerten Sie für sich selbst den Schwierigkeitsgrad dieser Frage.
+        <div id="difficulty-note" class="difficulty-note hidden">
+            Wie gut wusstest du die Antwort?
         </div>
         <div class="button-row">
             <button onclick="prevCard()">Zurück</button>
@@ -125,13 +121,16 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
     let learnedCards = {};
     let userId = 'defaultUser';
     let isMixMode = false;
+    let hideLearnedIsActive = false;
 
     const questionElement = document.getElementById('question');
     const answerElement = document.getElementById('answer');
     const cardElement = document.getElementById('flashcard');
     const topicSelect = document.getElementById('topic-select');
-    const hideLearnedCheckbox = document.getElementById('hide-learned-checkbox');
+    const toggleHideButton = document.getElementById('toggle-hide-button');
     const controlsDiv = document.querySelector('.controls');
+    const difficultyButtons = document.getElementById('difficulty-buttons'); // NEU
+    const difficultyNote = document.getElementById('difficulty-note'); // NEU
 
     function generateCardId(topic, question) {
         return `${topic}_${question.replace(/[^a-zA-Z0-9]/g, '')}`.slice(0, 50);
@@ -178,7 +177,6 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
                     const cardArray = Array.isArray(flashcardData[topicKey].cards) 
                         ? flashcardData[topicKey].cards 
                         : Object.values(flashcardData[topicKey].cards);
-
                     cardArray.forEach(card => {
                         card.id = generateCardId(topicKey, card.question);
                         cards.push(card);
@@ -195,7 +193,7 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
                 ? [...flashcardData[currentTopic].cards]
                 : [...Object.values(flashcardData[currentTopic].cards)];
         }
-        if (hideLearnedCheckbox.checked && !isMixMode) {
+        if (hideLearnedIsActive && !isMixMode) {
             cards = cards.filter(card => {
                 const cardId = generateCardId(currentTopic, card.question);
                 return learnedCards[cardId] !== 'einfach';
@@ -209,9 +207,30 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
         currentCardIndex = 0;
         showCard();
     }
+    
+    function toggleHideState() {
+        hideLearnedIsActive = !hideLearnedIsActive;
+        if (hideLearnedIsActive) {
+            toggleHideButton.classList.add('active');
+            toggleHideButton.innerText = 'Alle Karten anzeigen';
+        } else {
+            toggleHideButton.classList.remove('active');
+            toggleHideButton.innerText = '"Einfache" Karten ausblenden';
+        }
+        shuffleAndShow();
+    }
+    
+    function resetHideButton() {
+        hideLearnedIsActive = false;
+        toggleHideButton.classList.remove('active');
+        toggleHideButton.innerText = '"Einfache" Karten ausblenden';
+    }
 
     function showCard() {
         cardElement.classList.remove('flipped');
+        difficultyButtons.classList.add('hidden'); // Buttons beim Anzeigen einer neuen Karte ausblenden
+        difficultyNote.classList.add('hidden');    // Notiz beim Anzeigen einer neuen Karte ausblenden
+        
         if (shuffledCards.length === 0) {
             questionElement.innerText = "Alle Karten in diesem Thema gelernt oder es sind keine Karten vorhanden.";
             answerElement.innerHTML = "-";
@@ -219,10 +238,6 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
         }
         const currentCard = shuffledCards[currentCardIndex];
         questionElement.innerText = currentCard.question || "Frage nicht gefunden";
-        
-        // ==================================================================
-        // HIER IST DIE ÄNDERUNG: Logik für Text- und Bild-Antwort
-        // ==================================================================
         let backContent = '';
         if (currentCard.answer) {
             backContent += `<span>${currentCard.answer}</span>`;
@@ -230,7 +245,6 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
         if (currentCard.bildUrl) {
             backContent += `<img src="${currentCard.bildUrl}" alt="Bild zur Lernkarte">`;
         }
-        // Fallback, falls beides fehlt
         if (!backContent) {
             backContent = 'Keine Antwort vorhanden.';
         }
@@ -241,15 +255,15 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
         currentTopic = topicSelect.value;
         isMixMode = (currentTopic === 'mix_all');
         controlsDiv.style.display = isMixMode ? 'none' : 'flex';
+        resetHideButton();
         loadLearnedStatus();
-    }
-
-    function toggleLearnedCards() {
-        shuffleAndShow();
     }
 
     function flipCard() {
         cardElement.classList.toggle('flipped');
+        // Bewertungs-Buttons ein-/ausblenden, wenn die Karte gedreht wird
+        difficultyButtons.classList.toggle('hidden');
+        difficultyNote.classList.toggle('hidden');
     }
 
     function prevCard() {
@@ -291,7 +305,7 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
         database.ref(`learnedStatus/${userId}/${currentTopic}/${cardId}`).set(level);
         learnedCards[cardId] = level;
         updateProgressBar();
-        if (hideLearnedCheckbox.checked && level === 'einfach') {
+        if (hideLearnedIsActive && level === 'einfach') {
             shuffleAndShow();
         } else {
             nextCard();
@@ -339,7 +353,7 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
             const cardElement = document.createElement('div');
             cardElement.className = 'printable-card';
             let content = `<h3>${card.question}</h3>`;
-            if (card.answer) { // NEU: Text-Antwort zum Druck hinzufügen
+            if (card.answer) {
                 content += `<div>${card.answer}</div>`;
             }
             if (card.bildUrl) {
@@ -357,12 +371,17 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
             case 'ArrowLeft': prevCard(); break;
             case 'ArrowRight': nextCard(); break;
             case ' ': e.preventDefault(); flipCard(); break;
-            case 'Enter': markDifficulty('einfach'); break;
+            case 'Enter': 
+                // Enter soll nur funktionieren, wenn die Buttons sichtbar sind
+                if (!difficultyButtons.classList.contains('hidden')) {
+                    markDifficulty('einfach');
+                }
+                break;
         }
     });
     
     function loadApp() {
-        userId = prompt("Bitte gib einen Benutzernamen ein (um deinen Fortschritt zu speichern):", "gast");
+        userId = prompt("Bitte gib einen neuen Benutzernamen ein (um deinen Fortschritt zu speichern):", "gast");
         if (!userId) userId = 'gast';
         
         database.ref('themen').once('value').then((snapshot) => {
