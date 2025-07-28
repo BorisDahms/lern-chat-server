@@ -16,7 +16,7 @@
         .card { width: 100%; aspect-ratio: 1712 / 1325; perspective: 1000px; position: relative; margin-bottom: 15px; }
         .card-inner { width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 0.6s; box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2); border-radius: 10px; }
         .card.flipped .card-inner { transform: rotateY(180deg); }
-        .card-front, .card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; box-sizing: border-box; border-radius: 10px; font-size: 1.2rem; overflow: hidden; }
+        .card-front, .card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; box-sizing: border-box; border-radius: 10px; font-size: 1.2rem; overflow-y: auto; }
         .card-front { background-color: #d1e7ff; color: #0e0b4f; }
         .card-back { background-color: #d7ffd9; color: #0e0b4f; transform: rotateY(180deg); }
         .card-back img { max-width: 100%; max-height: 100%; border-radius: 5px; object-fit: contain; }
@@ -25,33 +25,14 @@
         button { padding: 12px 15px; font-size: 1rem; cursor: pointer; border: 1px solid #ccc; border-radius: 5px; background-color: #f8f8f8; transition: background-color 0.3s; flex-grow: 1; flex-basis: 0; }
         button:hover { background-color: #e7e7e7; }
         
-        .btn-schwer, .btn-mittel, .btn-einfach {
-            border-width: 2px;
-        }
+        .btn-schwer, .btn-mittel, .btn-einfach { border-width: 2px; }
         .btn-schwer { border-color: #f44336; }
         .btn-mittel { border-color: #ffc107; }
         .btn-einfach { border-color: #4CAF50; }
         
-        .difficulty-note {
-            font-size: 0.9rem;
-            color: #c0392b;
-            font-weight: bold;
-            text-align: center;
-            margin-top: 5px;
-        }
-
-        .secondary-actions button {
-            font-size: 0.8rem;
-            padding: 8px 12px;
-            background-color: #e9ecef;
-            border-color: #ced4da;
-            color: #495057;
-            flex-grow: 0;
-            flex-basis: auto;
-        }
-         .secondary-actions button:hover {
-             background-color: #d6dbe0;
-        }
+        .difficulty-note { font-size: 0.9rem; color: #c0392b; font-weight: bold; text-align: center; margin-top: 5px; }
+        .secondary-actions button { font-size: 0.8rem; padding: 8px 12px; background-color: #e9ecef; border-color: #ced4da; color: #495057; flex-grow: 0; flex-basis: auto; }
+        .secondary-actions button:hover { background-color: #d6dbe0; }
 
         .controls { margin: 15px 0; display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 10px; }
         .control-btn { font-size: 0.8rem; padding: 8px 12px; flex-grow: 1; }
@@ -64,21 +45,17 @@
         #visitor-counter { text-align: center; margin-top: 40px; margin-bottom: 20px; font-size: 0.9rem; color: #555; }
         .hidden { display: none; }
         
-        /* NEU: Versteckt den Druckbereich in der normalen Ansicht */
-        #printable-content {
-            display: none;
-        }
-
+        /* --- NEU: Styling für Multiple-Choice-Antworten --- */
+        .mc-question { margin-bottom: 15px; font-weight: bold; }
+        .mc-options-list { list-style-type: none; padding: 0; text-align: left; width: 90%; margin: 0; }
+        .mc-options-list li { border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin-bottom: 8px; background-color: #fff; }
+        .mc-options-list li.correct { background-color: #c8e6c9; color: #256029; font-weight: bold; border-color: #256029; }
+        /* --- Ende NEU --- */
+        
+        #printable-content { display: none; }
         @media (min-width: 600px) { .flashcard-container { margin: 40px auto; } .card-front, .card-back { font-size: 1.5rem; } }
         @media (max-width: 360px) { .card-front, .card-back { font-size: 1.1rem; padding: 15px; } button { padding: 10px; } }
-        @media print { 
-            body * { display: none; } 
-            #printable-content, #printable-content * { display: block; } 
-            .printable-card { page-break-inside: avoid; border: 1px solid #ccc; border-radius: 8px; padding: 15px; margin-bottom: 20px; } 
-            .printable-card h3 { font-size: 14pt; margin: 0 0 10px 0; color: #000; } 
-            .printable-card div { font-size: 12pt; color: #333; } 
-            .printable-card img { max-width: 80%; height: auto; margin-top: 10px; border-radius: 5px; } 
-        }
+        @media print { body * { display: none; } #printable-content, #printable-content * { display: block; } .printable-card { page-break-inside: avoid; border: 1px solid #ccc; border-radius: 8px; padding: 15px; margin-bottom: 20px; } .printable-card h3 { font-size: 14pt; margin: 0 0 10px 0; color: #000; } .printable-card div { font-size: 12pt; color: #333; } .printable-card img { max-width: 80%; height: auto; margin-top: 10px; border-radius: 5px; } }
     </style>
 </head>
 <body>
@@ -111,8 +88,8 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
     </div>
     <div class="card" id="flashcard">
         <div class="card-inner">
-            <div class="card-front"><p id="question"></p></div>
-            <div class="card-back"><div id="answer"></div></div>
+            <div class="card-front" id="card-front-content"></div>
+            <div class="card-back" id="card-back-content"></div>
         </div>
     </div>
     <div class="card-buttons">
@@ -140,7 +117,7 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
 
 <script>
     const firebaseConfig = {
-        apiKey: "IHR_API_SCHLUESSEL", // WICHTIG: Ersetzen Sie dies mit Ihrem eingeschränkten Schlüssel
+        apiKey: "IHR_API_SCHLUESSEL",
         authDomain: "lernkarten-801e2.firebaseapp.com",
         databaseURL: "https://lernkarten-801e2-default-rtdb.europe-west1.firebasedatabase.app",
         projectId: "lernkarten-801e2",
@@ -160,20 +137,76 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
     let userId = 'defaultUser';
     let isMixMode = false;
     let hideLearnedIsActive = false;
+    
+    // ANGEPASST: IDs für Vorder- und Rückseite geholt
+    const cardFrontContent = document.getElementById('card-front-content');
+    const cardBackContent = document.getElementById('card-back-content');
 
-    const questionElement = document.getElementById('question');
-    const answerElement = document.getElementById('answer');
     const cardElement = document.getElementById('flashcard');
     const topicSelect = document.getElementById('topic-select');
     const toggleHideButton = document.getElementById('toggle-hide-button');
     const controlsDiv = document.querySelector('.controls');
     const difficultyButtons = document.getElementById('difficulty-buttons'); 
     const difficultyNote = document.getElementById('difficulty-note'); 
+    
+    // ==================================================================
+    // HIER IST DIE HAUPTÄNDERUNG: Die `showCard` Funktion
+    // ==================================================================
+    function showCard() {
+        cardElement.classList.remove('flipped');
+        difficultyButtons.classList.add('hidden');
+        difficultyNote.classList.add('hidden');
+        
+        if (shuffledCards.length === 0) {
+            cardFrontContent.innerHTML = `<p>Alle Karten in diesem Thema gelernt oder es sind keine Karten vorhanden.</p>`;
+            cardBackContent.innerHTML = `<p>-</p>`;
+            return;
+        }
+        const currentCard = shuffledCards[currentCardIndex];
+
+        // Prüfen, ob die Karte vom Typ "multiple-choice" ist
+        if (currentCard.type === 'multiple-choice') {
+            // HTML für die Vorderseite erstellen (Frage + Optionen)
+            let frontHtml = `<div class="mc-question">${currentCard.question}</div><ul class="mc-options-list">`;
+            currentCard.options.forEach(option => {
+                frontHtml += `<li>${option.text}</li>`;
+            });
+            frontHtml += `</ul>`;
+            cardFrontContent.innerHTML = frontHtml;
+            
+            // HTML für die Rückseite erstellen (Frage + Optionen mit farblicher Markierung)
+            let backHtml = `<div class="mc-question">${currentCard.question}</div><ul class="mc-options-list">`;
+            currentCard.options.forEach(option => {
+                // Wenn die Antwort richtig ist, Klasse "correct" hinzufügen
+                const correctClass = option.correct ? 'class="correct"' : '';
+                backHtml += `<li ${correctClass}>${option.text}</li>`;
+            });
+            backHtml += `</ul>`;
+            cardBackContent.innerHTML = backHtml;
+
+        } else { // Standard-Karte (wie bisher)
+            cardFrontContent.innerHTML = `<p>${currentCard.question || "Frage nicht gefunden"}</p>`;
+            
+            let backContent = '';
+            if (currentCard.answer) {
+                backContent += `<span>${currentCard.answer}</span>`;
+            }
+            if (currentCard.bildUrl) {
+                backContent += `<img src="${currentCard.bildUrl}" alt="Bild zur Lernkarte">`;
+            }
+            if (!backContent) {
+                backContent = 'Keine Antwort vorhanden.';
+            }
+            cardBackContent.innerHTML = backContent;
+        }
+    }
+
+    // --- Ab hier folgen die restlichen Funktionen (unverändert) ---
 
     function generateCardId(topic, question) {
         return `${topic}_${question.replace(/[^a-zA-Z0-9]/g, '')}`.slice(0, 50);
     }
-
+    // ... (alle weiteren JavaScript-Funktionen bleiben exakt gleich)
     function loadLearnedStatus() {
         if (isMixMode) {
             learnedCards = {};
@@ -186,7 +219,6 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
             shuffleAndShow();
         });
     }
-
     function populateTopics() {
         topicSelect.innerHTML = ''; 
         for (const topicKey in flashcardData) {
@@ -205,7 +237,6 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
         }
         topicSelect.value = currentTopic;
     }
-
     function shuffleAndShow() {
         updateProgressBar();
         let cards = [];
@@ -245,7 +276,6 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
         currentCardIndex = 0;
         showCard();
     }
-    
     function toggleHideState() {
         hideLearnedIsActive = !hideLearnedIsActive;
         if (hideLearnedIsActive) {
@@ -257,38 +287,11 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
         }
         shuffleAndShow();
     }
-    
     function resetHideButton() {
         hideLearnedIsActive = false;
         toggleHideButton.classList.remove('active');
         toggleHideButton.innerText = '"Einfache" Karten ausblenden';
     }
-
-    function showCard() {
-        cardElement.classList.remove('flipped');
-        difficultyButtons.classList.add('hidden');
-        difficultyNote.classList.add('hidden');
-        
-        if (shuffledCards.length === 0) {
-            questionElement.innerText = "Alle Karten in diesem Thema gelernt oder es sind keine Karten vorhanden.";
-            answerElement.innerHTML = "-";
-            return;
-        }
-        const currentCard = shuffledCards[currentCardIndex];
-        questionElement.innerText = currentCard.question || "Frage nicht gefunden";
-        let backContent = '';
-        if (currentCard.answer) {
-            backContent += `<span>${currentCard.answer}</span>`;
-        }
-        if (currentCard.bildUrl) {
-            backContent += `<img src="${currentCard.bildUrl}" alt="Bild zur Lernkarte">`;
-        }
-        if (!backContent) {
-            backContent = 'Keine Antwort vorhanden.';
-        }
-        answerElement.innerHTML = backContent;
-    }
-
     function changeTopic() {
         currentTopic = topicSelect.value;
         isMixMode = (currentTopic === 'mix_all');
@@ -296,25 +299,21 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
         resetHideButton();
         loadLearnedStatus();
     }
-
     function flipCard() {
         cardElement.classList.toggle('flipped');
         difficultyButtons.classList.toggle('hidden');
         difficultyNote.classList.toggle('hidden');
     }
-
     function prevCard() {
         if (shuffledCards.length === 0) return;
         currentCardIndex = (currentCardIndex - 1 + shuffledCards.length) % shuffledCards.length;
         showCard();
     }
-
     function nextCard() {
         if (shuffledCards.length === 0) return;
         currentCardIndex = (currentCardIndex + 1) % shuffledCards.length;
         showCard();
     }
-
     function updateProgressBar() {
         if (isMixMode) {
             document.getElementById('progressText').innerText = "Zufallsmodus";
@@ -334,7 +333,6 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
         progressBarElement.style.width = percentage + '%';
         progressTextElement.innerText = `Fortschritt: ${learnedCount} / ${totalCards} (${Math.round(percentage)}%)`;
     }
-
     function markDifficulty(level) {
         if (shuffledCards.length === 0 || isMixMode) return;
         const currentCard = shuffledCards[currentCardIndex];
@@ -348,7 +346,6 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
             nextCard();
         }
     }
-
     function resetTopicProgress() {
         if (isMixMode) return;
         if (confirm(`Möchten Sie den Lernfortschritt für "${flashcardData[currentTopic].displayName}" wirklich zurücksetzen?`)) {
@@ -357,7 +354,6 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
             shuffleAndShow();
         }
     }
-
     function switchUser() {
         let newUserId = prompt("Bitte gib einen neuen Benutzernamen ein:", "gast");
         if (!newUserId || newUserId.trim() === "") return;
@@ -365,7 +361,6 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
         changeTopic();
         alert(`Willkommen, ${userId}!`);
     }
-
     function updateVisitorCount() {
         const visitorRef = database.ref('visitors');
         visitorRef.transaction((currentCount) => (currentCount || 0) + 1)
@@ -375,7 +370,6 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
                 }
             }).catch(error => console.log('Firebase transaction failed!', error));
     }
-
     function printCards() {
         let printableContent = document.getElementById('printable-content');
         if (!printableContent) {
@@ -396,12 +390,19 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
             if (card.bildUrl) {
                 content += `<div><img src="${card.bildUrl}" alt="Antwortbild"></div>`;
             }
+            // NEU: Druck-Unterstützung für Multiple Choice
+            if (card.type === 'multiple-choice' && card.options) {
+                content += '<ul>';
+                card.options.forEach(opt => {
+                    content += `<li>${opt.text} ${opt.correct ? '<strong>(Richtig)</strong>' : ''}</li>`;
+                });
+                content += '</ul>';
+            }
             cardElement.innerHTML = content;
             printableContent.appendChild(cardElement);
         });
         setTimeout(() => window.print(), 250);
     }
-
     document.addEventListener('keydown', (e) => {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
         switch (e.key) {
@@ -415,9 +416,8 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
                 break;
         }
     });
-    
     function loadApp() {
-        userId = prompt("Bitte gib einen neuen Benutzernamen ein (um deinen Fortschritt zu speichern):", "gast");
+        userId = prompt("Bitte gib einen Benutzernamen ein (um deinen Fortschritt zu speichern):", "gast");
         if (!userId) userId = 'gast';
         
         database.ref('themen').once('value').then((snapshot) => {
@@ -430,7 +430,6 @@ Bei einem Neubeginn wechseln Sie den Benutzer <br> und geben einen anderen Namen
             alert("Die Lernkarten konnten nicht aus der Datenbank geladen werden. Bitte überprüfen Sie die Verbindung.");
         });
     }
-
     document.addEventListener('DOMContentLoaded', loadApp);
 </script>
 
