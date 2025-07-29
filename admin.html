@@ -26,12 +26,11 @@
         .card-item-actions .edit-btn:hover { background-color: #0056b3; }
         .card-item-actions .delete-btn { background-color: #dc3545; }
         .card-item-actions .delete-btn:hover { background-color: #c82333; }
-        .edit-view-input { padding: 5px; margin-top: 5px; }
         .hidden { display: none; }
-        /* NEU: Styling für die Multiple-Choice-Optionen */
         .mc-option { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
         .mc-option input[type="text"] { margin-bottom: 0; }
         .mc-option input[type="checkbox"] { width: 20px; height: 20px; }
+        .edit-view-input { padding: 5px; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -50,10 +49,8 @@
         </div>
     </div>
     <hr>
-    
     <div id="add-card-form">
         <h2>Neue Karte hinzufügen</h2>
-        
         <div>
             <label for="new-card-type">Kartentyp auswählen:</label>
             <select id="new-card-type" onchange="toggleFormFields()">
@@ -61,7 +58,6 @@
                 <option value="multiple-choice">Multiple Choice</option>
             </select>
         </div>
-
         <div id="form-standard">
             <div>
                 <label for="new-question-standard">Frage:</label>
@@ -76,31 +72,17 @@
                 <input type="url" id="new-image-url" placeholder="https://beispiel.de/bild.jpg">
             </div>
         </div>
-
         <div id="form-mc" class="hidden">
             <div>
                 <label for="new-question-mc">Frage:</label>
                 <input type="text" id="new-question-mc" placeholder="Geben Sie hier die Multiple-Choice-Frage ein">
             </div>
             <label>Antwortmöglichkeiten (die richtige ankreuzen):</label>
-            <div class="mc-option">
-                <input type="text" class="mc-option-text" placeholder="Antwort 1">
-                <input type="checkbox" class="mc-option-correct">
-            </div>
-            <div class="mc-option">
-                <input type="text" class="mc-option-text" placeholder="Antwort 2">
-                <input type="checkbox" class="mc-option-correct">
-            </div>
-            <div class="mc-option">
-                <input type="text" class="mc-option-text" placeholder="Antwort 3">
-                <input type="checkbox" class="mc-option-correct">
-            </div>
-            <div class="mc-option">
-                <input type="text" class="mc-option-text" placeholder="Antwort 4">
-                <input type="checkbox" class="mc-option-correct">
-            </div>
+            <div class="mc-option"><input type="text" class="mc-option-text" placeholder="Antwort 1"><input type="checkbox" class="mc-option-correct"></div>
+            <div class="mc-option"><input type="text" class="mc-option-text" placeholder="Antwort 2"><input type="checkbox" class="mc-option-correct"></div>
+            <div class="mc-option"><input type="text" class="mc-option-text" placeholder="Antwort 3"><input type="checkbox" class="mc-option-correct"></div>
+            <div class="mc-option"><input type="text" class="mc-option-text" placeholder="Antwort 4"><input type="checkbox" class="mc-option-correct"></div>
         </div>
-
         <button onclick="addNewCard()" class="save-btn">Neue Karte speichern</button>
     </div>
 </div>
@@ -122,13 +104,10 @@
     let allData = {};
     const topicSelect = document.getElementById('topic-select');
     const cardsContainer = document.getElementById('cards-container');
-    
-    // Referenzen auf alle neuen Formular-Elemente
     const cardTypeSelect = document.getElementById('new-card-type');
     const formStandard = document.getElementById('form-standard');
     const formMc = document.getElementById('form-mc');
 
-    // NEU: Funktion zum Umschalten der Formularfelder
     function toggleFormFields() {
         if (cardTypeSelect.value === 'standard') {
             formStandard.classList.remove('hidden');
@@ -139,71 +118,6 @@
         }
     }
 
-    // ANGEPASST: Die Funktion wurde stark erweitert
-    function addNewCard() {
-        const selectedTopicKey = topicSelect.value;
-        const cardType = cardTypeSelect.value;
-        let newCard = {};
-
-        if (cardType === 'standard') {
-            const question = document.getElementById('new-question-standard').value.trim();
-            const answer = document.getElementById('new-answer').value.trim();
-            const imageUrl = document.getElementById('new-image-url').value.trim();
-
-            if (!question) {
-                alert('Bitte geben Sie eine Frage ein.');
-                return;
-            }
-            newCard = {
-                type: 'standard',
-                question: question,
-                answer: answer,
-                bildUrl: imageUrl
-            };
-        } else { // 'multiple-choice'
-            const question = document.getElementById('new-question-mc').value.trim();
-            if (!question) {
-                alert('Bitte geben Sie eine Frage ein.');
-                return;
-            }
-
-            const options = [];
-            const optionElements = document.querySelectorAll('.mc-option');
-            optionElements.forEach(opt => {
-                const textInput = opt.querySelector('.mc-option-text');
-                const correctCheckbox = opt.querySelector('.mc-option-correct');
-                if (textInput.value.trim() !== '') {
-                    options.push({
-                        text: textInput.value.trim(),
-                        correct: correctCheckbox.checked
-                    });
-                }
-            });
-
-            if (options.length < 2) {
-                alert('Bitte geben Sie mindestens zwei Antwortmöglichkeiten an.');
-                return;
-            }
-
-            newCard = {
-                type: 'multiple-choice',
-                question: question,
-                options: options
-            };
-        }
-
-        // Speichern in Firebase (für beide Kartentypen gleich)
-        database.ref(`themen/${selectedTopicKey}/cards`).push(newCard)
-            .then(() => {
-                alert('Neue Karte erfolgreich gespeichert!');
-                // Alle Formularfelder zurücksetzen
-                document.querySelectorAll('#add-card-form input[type="text"], #add-card-form input[type="url"], #add-card-form textarea').forEach(input => input.value = '');
-                document.querySelectorAll('#add-card-form input[type="checkbox"]').forEach(cb => cb.checked = false);
-            })
-            .catch(error => alert('Fehler beim Speichern: ' + error.message));
-    }
-    
-    // --- Bestehende Funktionen (gekürzt zur Übersicht) ---
     function loadInitialData() {
         database.ref('themen').on('value', (snapshot) => {
             allData = snapshot.val();
@@ -223,8 +137,7 @@
         }
         if (currentVal) topicSelect.value = currentVal;
     }
-    
-    // ANGEPASST: Zeigt nun an, um welchen Kartentyp es sich handelt
+
     function displayCardsForTopic() {
         const selectedTopicKey = topicSelect.value;
         const topic = allData[selectedTopicKey];
@@ -245,7 +158,8 @@
             
             let cardDetails = '';
             if (card.type === 'multiple-choice') {
-                cardDetails = `<small><strong>Typ:</strong> Multiple Choice</small><br><small><strong>Optionen:</strong> ${card.options.length}</small>`;
+                const correctOptions = card.options.filter(opt => opt.correct).map(opt => opt.text).join(', ');
+                cardDetails = `<small><strong>Typ:</strong> Multiple Choice</small><br><small><strong>Richtige Antwort(en):</strong> ${correctOptions}</small>`;
             } else {
                 cardDetails = `<small><strong>Antwort:</strong> ${card.answer || 'Kein Text'}</small><br><small><strong>Bild-URL:</strong> ${card.bildUrl || 'Keine URL'}</small>`;
             }
@@ -263,8 +177,47 @@
             cardsContainer.appendChild(cardElement);
         }
     }
+    
+    function addNewCard() {
+        const selectedTopicKey = topicSelect.value;
+        const cardType = cardTypeSelect.value;
+        let newCard = {};
 
-    // Die folgenden Funktionen (deleteCard, editCard, saveCard) müssen wir im nächsten Schritt noch anpassen!
+        if (cardType === 'standard') {
+            const question = document.getElementById('new-question-standard').value.trim();
+            if (!question) return alert('Bitte geben Sie eine Frage ein.');
+            newCard = {
+                type: 'standard',
+                question: question,
+                answer: document.getElementById('new-answer').value.trim(),
+                bildUrl: document.getElementById('new-image-url').value.trim()
+            };
+        } else {
+            const question = document.getElementById('new-question-mc').value.trim();
+            if (!question) return alert('Bitte geben Sie eine Frage ein.');
+            const options = [];
+            document.querySelectorAll('#form-mc .mc-option').forEach(opt => {
+                const textInput = opt.querySelector('.mc-option-text');
+                if (textInput.value.trim() !== '') {
+                    options.push({
+                        text: textInput.value.trim(),
+                        correct: opt.querySelector('.mc-option-correct').checked
+                    });
+                }
+            });
+            if (options.length < 2) return alert('Bitte geben Sie mindestens zwei Antwortmöglichkeiten an.');
+            newCard = { type: 'multiple-choice', question: question, options: options };
+        }
+
+        database.ref(`themen/${selectedTopicKey}/cards`).push(newCard)
+            .then(() => {
+                alert('Neue Karte erfolgreich gespeichert!');
+                document.querySelectorAll('#add-card-form input[type="text"], #add-card-form input[type="url"], #add-card-form textarea').forEach(input => input.value = '');
+                document.querySelectorAll('#add-card-form input[type="checkbox"]').forEach(cb => cb.checked = false);
+            })
+            .catch(error => alert('Fehler beim Speichern: ' + error.message));
+    }
+    
     function deleteCard(cardKey) {
         if (!confirm('Möchten Sie diese Lernkarte wirklich endgültig löschen?')) return;
         const selectedTopicKey = topicSelect.value;
@@ -272,12 +225,92 @@
             .then(() => alert('Karte erfolgreich gelöscht.'))
             .catch(error => alert('Fehler beim Löschen: ' + error.message));
     }
-
+    
+    // ==================================================================
+    // KOMPLETT NEU: Die intelligente "editCard" Funktion
+    // ==================================================================
     function editCard(cardKey) {
-        alert("Die Bearbeiten-Funktion für Multiple Choice wird im nächsten Schritt eingebaut.");
+        const selectedTopicKey = topicSelect.value;
+        const card = allData[selectedTopicKey].cards[cardKey];
+        const cardElement = document.getElementById(`card-${cardKey}`);
+        let editHtml = '';
+
+        if (card.type === 'multiple-choice') {
+            let optionsHtml = '';
+            for(let i = 0; i < 4; i++) {
+                const option = card.options[i] || { text: '', correct: false };
+                const checked = option.correct ? 'checked' : '';
+                optionsHtml += `
+                    <div class="mc-option">
+                        <input type="text" class="mc-option-text" value="${option.text}" placeholder="Antwort ${i + 1}">
+                        <input type="checkbox" class="mc-option-correct" ${checked}>
+                    </div>
+                `;
+            }
+            editHtml = `
+                <div class="card-item-content">
+                    <input type="text" id="edit-question-${cardKey}" value="${card.question}" class="edit-view-input">
+                    <hr>
+                    ${optionsHtml}
+                </div>
+            `;
+        } else { // Standard-Karte
+            editHtml = `
+                <div class="card-item-content">
+                    <textarea id="edit-question-${cardKey}" class="edit-view-input" rows="2">${card.question}</textarea>
+                    <textarea id="edit-answer-${cardKey}" class="edit-view-input" rows="3">${card.answer || ''}</textarea>
+                    <input type="url" id="edit-image-${cardKey}" class="edit-view-input" value="${card.bildUrl || ''}">
+                </div>
+            `;
+        }
+
+        cardElement.innerHTML = editHtml + `
+            <div class="card-item-actions">
+                <button onclick="saveCard('${cardKey}')" class="save-btn">Speichern</button>
+                <button onclick="displayCardsForTopic()">Abbrechen</button>
+            </div>
+        `;
     }
+
+    // ==================================================================
+    // KOMPLETT NEU: Die intelligente "saveCard" Funktion
+    // ==================================================================
     function saveCard(cardKey) {
-        alert("Die Speicher-Funktion für Multiple Choice wird im nächsten Schritt eingebaut.");
+        const selectedTopicKey = topicSelect.value;
+        const originalCard = allData[selectedTopicKey].cards[cardKey];
+        let updatedCardData = {};
+
+        if (originalCard.type === 'multiple-choice') {
+            const question = document.getElementById(`edit-question-${cardKey}`).value.trim();
+            if (!question) return alert('Die Frage darf nicht leer sein.');
+            const options = [];
+            const cardElement = document.getElementById(`card-${cardKey}`);
+            cardElement.querySelectorAll('.mc-option').forEach(opt => {
+                 const textInput = opt.querySelector('.mc-option-text');
+                if (textInput.value.trim() !== '') {
+                    options.push({
+                        text: textInput.value.trim(),
+                        correct: opt.querySelector('.mc-option-correct').checked
+                    });
+                }
+            });
+            if (options.length < 2) return alert('Bitte geben Sie mindestens zwei Antwortmöglichkeiten an.');
+            updatedCardData = { type: 'multiple-choice', question: question, options: options };
+
+        } else { // Standard-Karte
+            const question = document.getElementById(`edit-question-${cardKey}`).value.trim();
+            if (!question) return alert('Die Frage darf nicht leer sein.');
+            updatedCardData = {
+                type: 'standard',
+                question: question,
+                answer: document.getElementById(`edit-answer-${cardKey}`).value.trim(),
+                bildUrl: document.getElementById(`edit-image-${cardKey}`).value.trim()
+            };
+        }
+
+        database.ref(`themen/${selectedTopicKey}/cards/${cardKey}`).update(updatedCardData)
+            .then(() => alert('Änderungen erfolgreich gespeichert.'))
+            .catch(error => alert('Fehler beim Speichern: ' + error.message));
     }
 
     document.addEventListener('DOMContentLoaded', loadInitialData);
