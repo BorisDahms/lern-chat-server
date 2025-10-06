@@ -1,5 +1,4 @@
 // Dies ist die Hauptfunktion, die Vercel bei jeder Anfrage an /api/chat ausführt.
-// KORRIGIERT: Wir verwenden jetzt "export default", um die Funktion für ES-Module bereitzustellen.
 export default async function handler(req, res) {
     // --- CORS-Header setzen ---
     res.setHeader('Access-Control-Allow-Credentials', true);
@@ -26,7 +25,6 @@ export default async function handler(req, res) {
             return res.status(500).json({ error: "API-Schlüssel ist auf dem Server nicht konfiguriert." });
         }
 
-        // Wir nehmen nur den Chat-Verlauf vom Frontend.
         const { history } = req.body;
 
         if (!history) {
@@ -34,20 +32,19 @@ export default async function handler(req, res) {
         }
 
         // --- 2. Anfrage an die Google API senden ---
-        // ✅ HIER IST DIE KORRIGIERTE ZEILE:
         const googleApiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro-latest:generateContent?key=${GEMINI_API_KEY}`;
 
-        // FINALE KORREKTUR: Wir erstellen die Anweisung für die KI direkt hier auf dem Server,
-        // um jegliche Formatierungsfehler vom Frontend auszuschließen.
-        const serverSystemInstruction = {
+        // ✅ KORREKTUR: Die Systemanweisung wird als erster "contents"-Eintrag mit der Rolle "system" definiert.
+        const systemInstruction = {
+            role: "system", // Diese Rolle ist neu und wichtig
             parts: [{
                 text: "Du bist eine immer hilfsbereite 'Lernprozessbegleitung'. Deine Aufgabe ist es, komplexe Themen einfach und verständlich zusammenzufassen. Du begleitest das Lernen der dir anvertrauten Menschen und ebnest ihnen den Weg. Deine Antworten sind klar, ermutigend und auf den Punkt gebracht. Verwende einfache Sprache und gelegentlich Analogien, um das Verständnis zu erleichtern."
             }]
         };
 
         const requestPayload = {
-            contents: history,
-            systemInstruction: serverSystemInstruction, // Wir verwenden die neue, saubere Anweisung.
+            // Die Systemanweisung kommt an den Anfang des Arrays, vor den eigentlichen Chatverlauf.
+            contents: [systemInstruction, ...history], 
             generationConfig: {
                 temperature: 0.7,
                 maxOutputTokens: 1000,
