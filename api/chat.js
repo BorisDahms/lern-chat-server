@@ -32,19 +32,18 @@ export default async function handler(req, res) {
         }
 
         // --- 2. Anfrage an die Google API senden ---
-        const googleApiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro-latest:generateContent?key=${GEMINI_API_KEY}`;
+        // ✅ FINALE KORREKTUR: Modellname auf "gemini-1.5-pro" geändert.
+        const googleApiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`;
 
-        // ✅ KORREKTUR: Die Systemanweisung wird als erster "contents"-Eintrag mit der Rolle "system" definiert.
         const systemInstruction = {
-            role: "system", // Diese Rolle ist neu und wichtig
+            role: "system",
             parts: [{
                 text: "Du bist eine immer hilfsbereite 'Lernprozessbegleitung'. Deine Aufgabe ist es, komplexe Themen einfach und verständlich zusammenzufassen. Du begleitest das Lernen der dir anvertrauten Menschen und ebnest ihnen den Weg. Deine Antworten sind klar, ermutigend und auf den Punkt gebracht. Verwende einfache Sprache und gelegentlich Analogien, um das Verständnis zu erleichtern."
             }]
         };
 
         const requestPayload = {
-            // Die Systemanweisung kommt an den Anfang des Arrays, vor den eigentlichen Chatverlauf.
-            contents: [systemInstruction, ...history], 
+            contents: [systemInstruction, ...history],
             generationConfig: {
                 temperature: 0.7,
                 maxOutputTokens: 1000,
