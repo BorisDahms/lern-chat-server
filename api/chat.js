@@ -34,7 +34,8 @@ export default async function handler(req, res) {
         }
 
         // --- 2. Anfrage an die Google API senden ---
-        const googleApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+        // ✅ HIER IST DIE KORRIGIERTE ZEILE:
+        const googleApiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro-latest:generateContent?key=${GEMINI_API_KEY}`;
 
         // FINALE KORREKTUR: Wir erstellen die Anweisung für die KI direkt hier auf dem Server,
         // um jegliche Formatierungsfehler vom Frontend auszuschließen.
@@ -75,5 +76,3 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: error.message });
     }
 };
-
-
