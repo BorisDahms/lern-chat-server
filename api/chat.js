@@ -1,4 +1,4 @@
-// KORREKTUR: "import" anstelle von "require" verwenden, passend zur package.json
+// Wir importieren die offizielle Google AI Bibliothek
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Initialisieren das SDK mit dem API-Schlüssel aus den Umgebungsvariablen
@@ -23,7 +23,8 @@ export default async function handler(req, res) {
         const systemInstruction = "Du bist eine immer hilfsbereite 'Lernprozessbegleitung'. Deine Aufgabe ist es, komplexe Themen einfach und verständlich zusammenzufassen. Du begleitest das Lernen der dir anvertrauten Menschen und ebnest ihnen den Weg. Deine Antworten sind klar, ermutigend und auf den Punkt gebracht. Verwende einfache Sprache und gelegentlich Analogien, um das Verständnis zu erleichtern.";
         
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-pro",
+            // ✅ FINALE ÄNDERUNG: Umstellung auf das aktuelle Modell für 2025
+            model: "gemini-2-pro",
             systemInstruction: systemInstruction,
         });
 
