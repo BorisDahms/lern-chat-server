@@ -32,8 +32,8 @@ export default async function handler(req, res) {
         }
 
         // --- 2. Anfrage an die Google API senden ---
-        // ✅ FINALE KORREKTUR: Modellname auf "gemini-1.5-pro" geändert.
-        const googleApiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`;
+        // ✅ FINALE KORREKTUR: Umstellung auf das stabile Modell "gemini-pro" über die v1beta API.
+        const googleApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
 
         const systemInstruction = {
             role: "system",
