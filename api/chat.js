@@ -1,5 +1,5 @@
-// Wir importieren die offizielle Google AI Bibliothek
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+// KORREKTUR: "import" anstelle von "require" verwenden, passend zur package.json
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Initialisieren das SDK mit dem API-Schlüssel aus den Umgebungsvariablen
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -33,11 +33,8 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: "Fehlerhafte Anfrage: 'history' fehlt." });
         }
         
-        // Die letzte Nachricht vom Frontend ist die aktuelle Frage des Nutzers
         const lastUserMessage = history.pop();
         const userPrompt = lastUserMessage.parts[0].text;
-        
-        // Der Rest ist der bisherige Verlauf
         const chatHistory = history;
 
         // --- 3. Chat starten und Nachricht senden ---
