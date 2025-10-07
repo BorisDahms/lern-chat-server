@@ -17,6 +17,7 @@ export default async function handler(req, res) {
 
     try {
         // --- 1. Vertex AI Client initialisieren ---
+        // Die Bibliothek verwendet die Umgebungsvariablen automatisch
         const vertex_ai = new VertexAI({
             project: process.env.GOOGLE_PROJECT_ID,
             location: 'us-central1',
@@ -35,14 +36,18 @@ export default async function handler(req, res) {
         if (!history) {
             return res.status(400).json({ error: "Fehlerhafte Anfrage: 'history' fehlt." });
         }
-
+        
         const result = await generativeModel.generateContent({
             contents: history
         });
 
-        // --- 4. Antwort extrahieren und zurücksenden ---
+        // --- 4. Antwort extrahieren und korrekt formatieren ---
+        // Wir stellen sicher, dass eine Antwort vorhanden ist, bevor wir darauf zugreifen
+        if (!result.response || !result.response.candidates || result.response.candidates.length === 0) {
+            throw new Error("Keine gültige Antwort von der API erhalten.");
+        }
         const responseText = result.response.candidates[0].content.parts[0].text;
-
+        
         const frontendResponse = {
             candidates: [{
                 content: {
